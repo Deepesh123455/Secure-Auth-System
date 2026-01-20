@@ -39,8 +39,9 @@ Follow these steps to run the project locally.
 ```bash
 git clone [https://github.com/Deepesh123455/Secure-Auth-System.git](https://github.com/Deepesh123455/Secure-Auth-System.git)
 cd Secure-Auth-System
-2. Install DependenciesBashnpm install
-3. Configure Environment VariablesCreate a .env file in the root directory and add the following configuration.(Note: You will need a local or Atlas MongoDB URI and a running Redis instance).Code snippet# Server Configuration
+2. Install Dependencies
+   npm install
+3. Configure Environment VariablesCreate a .env file in the root directory and add the following configuration.(Note: You will need a local or Atlas MongoDB URI and a running Redis instance). Server Configuration
 PORT=5000
 NODE_ENV=development
 
@@ -62,8 +63,8 @@ JWT_REFRESH_EXPIRY=7d
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
-4. Run the ServerYou can run the server in development mode (with auto-restart) or production mode.Bash# Development Mode (uses nodemon)
+4. Run the ServerYou can run the server in development mode (with auto-restart) or production mode.Development Mode (uses nodemon)
 npm run dev
 
 # Production Mode
-npm start at the end
+npm start 
