@@ -1,6 +1,6 @@
 # 🛡️ SecureAuth API
 
-A production-ready Authentication & Authorization microservice built with **Node.js** and **Express**. 
+A production-ready Authentication & Authorization microservice built with **Node.js** and **Express**.
 
 Unlike basic tutorials, this project focuses on **security best practices**, scalability, and performance optimization using **Redis caching** and **Rate Limiting**.
 
@@ -27,7 +27,7 @@ Unlike basic tutorials, this project focuses on **security best practices**, sca
 - **Database:** MongoDB (Mongoose ODM)
 - **Caching/Performance:** Redis
 - **Security:** Helmet, CORS, Bcrypt, JWT, Express-Rate-Limit
-- **Validation:** Joi / Zod (Optional: update if you used these)
+- **Validation:** Joi / Zod (Optional)
 
 ---
 
@@ -37,5 +37,33 @@ Follow these steps to run the project locally.
 
 **1. Clone the repository**
 ```bash
-git clone [https://github.com/YOUR_USERNAME/REPO_NAME.git](https://github.com/YOUR_USERNAME/REPO_NAME.git)
-cd REPO_NAME
+git clone [https://github.com/Deepesh123455/Secure-Auth-System.git](https://github.com/Deepesh123455/Secure-Auth-System.git)
+cd Secure-Auth-System
+2. Install DependenciesBashnpm install
+3. Configure Environment VariablesCreate a .env file in the root directory and add the following configuration.(Note: You will need a local or Atlas MongoDB URI and a running Redis instance).Code snippet# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Database Connection
+MONGO_URI=mongodb://localhost:27017/secure_auth_db
+
+# Redis Configuration (Caching)
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+# REDIS_PASSWORD=  <-- Uncomment if your Redis has a password
+
+# JWT Secrets (Generate random strong strings for these)
+JWT_ACCESS_SECRET=your_super_secret_access_key_123
+JWT_REFRESH_SECRET=your_super_secret_refresh_key_456
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+
+# Google OAuth 2.0 Credentials
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+4. Run the ServerYou can run the server in development mode (with auto-restart) or production mode.Bash# Development Mode (uses nodemon)
+npm run dev
+
+# Production Mode
+npm start at the end
