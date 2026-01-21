@@ -47,11 +47,11 @@ Server Configuration
 * NODE_ENV=development
 
 # Database Connection
-MONGO_URI=mongodb://localhost:27017/secure_auth_db
+MONGO_URI=your mongodb uri
 
 # Redis Configuration (Caching)
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+REDIS_HOST=""
+REDIS_PORT=""
 # REDIS_PASSWORD=  <-- Uncomment if your Redis has a password
 
 # JWT Secrets (Generate random strong strings for these)
@@ -63,7 +63,7 @@ JWT_REFRESH_EXPIRY=7d
 # Google OAuth 2.0 Credentials
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+GOOGLE_CALLBACK_URL=""
 4. Run the ServerYou can run the server in development mode (with auto-restart) or production mode.
 # Development Mode
 * (uses nodemon)
