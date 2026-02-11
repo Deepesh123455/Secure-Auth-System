@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   User,
@@ -16,10 +16,14 @@ import { toast } from "react-toastify";
 
 const DashboardPage = () => {
   const { user, logout, updateProfile, isLoading } = useAuthStore();
-  const [newName, setNewName] = useState(user?.name || "");
-  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState<string>(user?.name || "");
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  const handleUpdate = async (e) => {
+  interface handleUpdate {
+    (e: HTMLFormElement):(e: HTMLFormElement) => Promise<void>;
+  }
+
+  const handleUpdate = async (e : React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await updateProfile({ name: newName });
@@ -36,7 +40,7 @@ const DashboardPage = () => {
        
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
           
-          <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
+          <div className="h-32 bg-linear-to-r from-blue-600 to-indigo-600 relative">
             <div className="absolute inset-0 bg-black/10"></div>
           </div>
 
@@ -64,7 +68,7 @@ const DashboardPage = () => {
                   {user?.name || "User Name"}
                 </h1>
                 <p className="text-sm text-gray-500 flex items-center justify-center sm:justify-start gap-1">
-                  {user?.role || "Member"}
+                  {"Member"}
                   <span className="text-gray-300">•</span>
                   Joined Dec 2025
                 </p>
@@ -109,7 +113,7 @@ const DashboardPage = () => {
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-1 p-2 rounded-lg ${
-                      user?.isEmailVerified
+                      user?.email
                         ? "bg-green-50 text-green-600"
                         : "bg-yellow-50 text-yellow-600"
                     }`}
@@ -119,7 +123,7 @@ const DashboardPage = () => {
                   <div>
                     <p className="text-xs text-gray-500">Verification Status</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      {user?.isEmailVerified ? (
+                      {user?.email ? (
                         <>
                           <CheckCircle size={14} className="text-green-600" />
                           <span className="text-sm font-medium text-green-700">
@@ -178,7 +182,7 @@ const DashboardPage = () => {
                 
                   <button
                     type="button"
-                    onClick={() => setNewName(user?.name)}
+                    onClick={() => setNewName(user?.name ?? "")}
                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                   >
                     Reset

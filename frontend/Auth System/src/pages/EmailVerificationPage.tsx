@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
+import  { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, XCircle, Mail, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "react-toastify";
 import { api } from "../apis/axios"; 
+import { AxiosError } from "axios";
 
 // email verification jisme hum email ko verify krnege ki user ko jo token mila hai vo valid hai ya nahi isko hum aur refine krenge aage chlke isme 4 secenerio hai wo maine notes me likhe hai i will refer from there
 
@@ -38,7 +39,7 @@ const EmailVerificationPage = () => {
       } catch (error) {
         console.error("Verification failed:", error);
         setStatus("error");
-        toast.error(error.response?.data?.message || "Verification failed");
+        toast.error(error instanceof AxiosError ? error.response?.data?.message ||  "Verification failed" : "Verification failed");
       }
     };
 

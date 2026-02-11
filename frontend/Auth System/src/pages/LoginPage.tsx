@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuthStore } from "../store/useAuthStore"; 
+import { useAuthStore } from "../store/useAuthStore";
 import {
   Eye,
   EyeOff,
@@ -11,29 +11,35 @@ import {
   ArrowRight,
   AlertCircle,
 } from "lucide-react";
+import { AxiosError } from "axios";
 
-// iss wale mai simple login ho rha hai aur token provide kr rhe hai user ko 
+// iss wale mai simple login ho rha hai aur token provide kr rhe hai user ko
+interface formErros {
+  email?: string;
+  password?: string;
+}
 
 const LoginPage = () => {
   const navigate = useNavigate();
- 
+
   const { login, isLoading } = useAuthStore();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState<{ email: string; password: string }>(
+    {
+      email: "",
+      password: "",
+    },
+  );
 
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-
+  const [errors, setErrors] = useState<formErros>({});
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // yeh vlidation maine gemini se liya hai best for aage ke use case ke liye
- 
+
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: formErros = {};
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
+
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -54,37 +60,44 @@ const LoginPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: "" });
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    // 1. Extract name and value from the event target
+    const { name, value } = e.target;
+
+    // 2. Update the form data
+    setFormData({ ...formData, [name]: value });
+
+    // 3. Use 'as keyof FormErrors' to tell TS that 'name' is a valid key
+    const fieldName = name as keyof formErros;
+
+    if (errors[fieldName]) {
+      setErrors({
+        ...errors,
+        [fieldName]: "",
+      });
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    
     try {
-      
       const user = await login(formData.email, formData.password);
 
-      toast.success(`Welcome back, ${user.name || "User"}!`);
+      toast.success(`Welcome back, ${user?.name || "User"}!`);
       navigate("/dashboard");
     } catch (error) {
       console.error("Login Error:", error);
       const errorMessage =
-        error.response?.data?.message ||
+        (error instanceof AxiosError && error.response?.data?.message) ||
         "Invalid credentials. Please try again.";
       toast.error(errorMessage);
     }
-    
   };
 
   return (
     <div className="flex min-h-screen w-full bg-white relative">
-      
       <div className="absolute top-5 right-5 lg:top-10 lg:right-10 z-10">
         <Link
           to="/register"
@@ -96,7 +109,6 @@ const LoginPage = () => {
 
       <div className="flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-24">
         <div className="mx-auto w-full max-w-md">
-        
           <div className="mb-8 flex items-center gap-2 text-blue-600">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
               M
@@ -116,7 +128,6 @@ const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-          
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-900">
                 Email
@@ -146,7 +157,6 @@ const LoginPage = () => {
               )}
             </div>
 
-            
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-gray-900">
@@ -191,10 +201,9 @@ const LoginPage = () => {
               )}
             </div>
 
-          
             <button
               type="submit"
-              disabled={isLoading} 
+              disabled={isLoading}
               className="group flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-blue-400"
             >
               {isLoading ? (
@@ -210,7 +219,6 @@ const LoginPage = () => {
               )}
             </button>
 
-           
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -222,7 +230,6 @@ const LoginPage = () => {
               </div>
             </div>
 
-            
             <a
               href="http://localhost:5000/api/auth/google"
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
@@ -251,7 +258,6 @@ const LoginPage = () => {
         </div>
       </div>
 
- 
       <div className="hidden h-screen w-1/2 bg-gray-50 lg:block relative">
         <img
           src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"

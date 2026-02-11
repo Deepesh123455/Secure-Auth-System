@@ -2,27 +2,30 @@ import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 
-
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage"; 
+import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashBoardPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Protect Routes Component hai yeh
-const ProtectedRoute = ({ children }) => {
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isCheckingAuth } = useAuthStore();
   if (isCheckingAuth) return <div>Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return children;
+  return <>{children}</>;
 };
 
 // Redirect Authenticated Users agar koi authenticate hai to use redirect krdo sidha dashboard pe taki use baar baar login na krna hai good user erxperience
-const RedirectAuthenticatedUser = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
-  if (isAuthenticated && user?.isEmailVerified)
-    return <Navigate to="/dashboard" replace />;
-  return children;
+interface Props {
+  children: React.ReactNode;
+}
+const RedirectAuthenticatedUser = ({ children }: Props) => {
+  const { isAuthenticated, user, isCheckingAuth } = useAuthStore();
+  if(isCheckingAuth) return <div>Loading...</div>;
+  if (isAuthenticated && user) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 };
 
 function App() {
@@ -34,7 +37,6 @@ function App() {
 
   return (
     <Routes>
-    
       <Route
         path="/login"
         element={
@@ -68,7 +70,6 @@ function App() {
         }
       />
 
-     
       <Route
         path="/dashboard"
         element={
@@ -78,7 +79,6 @@ function App() {
         }
       />
 
-      
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

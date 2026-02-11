@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import {
@@ -13,8 +13,12 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
-// isme google wala sign up aur normally token waigrah provide kr rhe hai isme aur user sign up kr skta hai isme by using the email and password 
-
+// isme google wala sign up aur normally token waigrah provide kr rhe hai isme aur user sign up kr skta hai isme by using the email and password
+interface formErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+}
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { register, isLoading } = useAuthStore();
@@ -25,15 +29,12 @@ const RegisterPage = () => {
     password: "",
   });
 
- 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<formErrors>({});
   const [showPassword, setShowPassword] = useState(false);
 
-
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: formErrors = {};
 
-   
     if (!formData.name.trim()) {
       newErrors.name = "Full name is required";
     } else if (formData.name.length < 2) {
@@ -48,7 +49,6 @@ const RegisterPage = () => {
       newErrors.email = "Please enter a valid email address";
     }
 
-   
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!formData.password) {
@@ -62,15 +62,21 @@ const RegisterPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: "" });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    const fieldName = name as keyof formErrors;
+
+    if (errors[fieldName]) {
+      setErrors({
+        ...errors,
+        [fieldName]: "",
+      });
     }
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validateForm()) return;
@@ -81,16 +87,13 @@ const RegisterPage = () => {
       navigate("/dashboard");
     } catch (error) {
       console.error("Registration failed", error);
-      
     }
   };
 
   return (
     <div className="flex min-h-screen w-full bg-white">
-
       <div className="flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-24">
         <div className="mx-auto w-full max-w-md">
-         
           <div className="mb-8 flex items-center gap-2 text-blue-600">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
               M
@@ -110,7 +113,6 @@ const RegisterPage = () => {
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5">
-         
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-900">
                 Full Name
@@ -140,7 +142,6 @@ const RegisterPage = () => {
               )}
             </div>
 
-           
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-900">
                 Email
@@ -170,7 +171,6 @@ const RegisterPage = () => {
               )}
             </div>
 
-      
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-900">
                 Password
@@ -207,7 +207,6 @@ const RegisterPage = () => {
               )}
             </div>
 
-           
             <button
               type="submit"
               disabled={isLoading}
@@ -226,7 +225,6 @@ const RegisterPage = () => {
               )}
             </button>
 
-            
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -238,7 +236,6 @@ const RegisterPage = () => {
               </div>
             </div>
 
-           
             <a
               href="http://localhost:5000/api/auth/google"
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
@@ -277,7 +274,6 @@ const RegisterPage = () => {
         </div>
       </div>
 
-    
       <div className="hidden h-screen w-1/2 bg-gray-50 lg:block relative">
         <img
           src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop"
