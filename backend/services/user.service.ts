@@ -1,13 +1,20 @@
-import User from "../models/user.model.js";
+import User , {type IUser} from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import redisClient from "../config/redis.js";
 
 /**
  
  * @param {Object} userBody
- * @returns {Promise<User>}
+ * @returns {Promise<IUser>}
  */
-const createUser = async (userBody) => {
+
+interface Body{
+  name?: string;
+  email?: string;
+  password?: string;
+  isEmailVerified?: boolean;
+}
+const createUser = async (userBody : Body) : Promise<IUser> => {
   if (await User.findOne({ email: userBody.email })) {
     throw new ApiError(400, "Email already taken");
   }
@@ -19,7 +26,7 @@ const createUser = async (userBody) => {
  * @param {string} id
  * @returns {Promise<User>}
  */
-const getUserById = async (id) => {
+const getUserById = async (id : string) => {
   return User.findById(id);
 };
 
@@ -29,7 +36,7 @@ const getUserById = async (id) => {
  * @param {Object} updateBody
  * @returns {Promise<User>}
  */
-const updateUserById = async (userId, updateBody) => {
+const updateUserById = async (userId : string, updateBody : Body ) => {
   const user = await getUserById(userId);
   if (!user) {
     throw new ApiError(404, "User not found");

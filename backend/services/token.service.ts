@@ -1,15 +1,19 @@
-import jwt from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import moment from "moment";
 import crypto from "crypto";
 import redisClient from "../config/redis.js";
 import ApiError from "../utils/ApiError.js";
-import User from "../models/user.model.js";
+import User, {type IUser} from "../models/user.model.js";
 import dotenv from "dotenv";
+import type { ObjectId } from "mongoose";
 
 dotenv.config();
 
-const generateToken = (userId, secret, expiresIn) => {
-  const payload = {
+interface CustomJwtPayload extends JwtPayload {
+  sub: string;
+}
+const generateToken = (userId : string, secret : string, expiresIn : string | number) => {
+  const payload : CustomJwtPayload = {
     sub: userId,
     iat: moment().unix(), 
   };
@@ -17,19 +21,19 @@ const generateToken = (userId, secret, expiresIn) => {
 };
 
 
-const generateAuthTokens = async (user) => {
+const generateAuthTokens = async (user : IUser) => {
   
   const accessToken = generateToken(
-    user._id,
-    process.env.JWT_ACCESS_SECRET,
-    process.env.JWT_ACCESS_EXPIRATION
+    String(user?._id),
+    process.env.JWT_ACCESS_SECRET as string,
+    process.env.JWT_ACCESS_EXPIRATION || "1d",
   );
 
   
   const refreshToken = generateToken(
-    user._id,
-    process.env.JWT_REFRESH_SECRET,
-    process.env.JWT_REFRESH_EXPIRATION
+    String(user._id),
+    process.env.JWT_REFRESH_SECRET as string,
+    process.env.JWT_REFRESH_EXPIRATION || "7d",
   );
 
   
@@ -44,9 +48,9 @@ const generateAuthTokens = async (user) => {
 };
 
 
-const verifyRefreshToken = async (token) => {
+const verifyRefreshToken = async (token : string) => {
   try {
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET as string) as { sub: string };
     const storedToken = await redisClient.get(`refresh_token:${payload.sub}`);
 
     if (!storedToken || storedToken !== token) {
@@ -60,12 +64,12 @@ const verifyRefreshToken = async (token) => {
 };
 
 
-const removeRefreshToken = async (userId) => {
+const removeRefreshToken = async (userId : string) => {
   await redisClient.del(`refresh_token:${userId}`);
 };
 
 
-const generateResetPasswordToken = async (email) => {
+const generateResetPasswordToken = async (email : string) => {
   const user = await User.findOne({ email });
   if (!user) {
     throw new ApiError(404, "No user found with this email");
@@ -77,7 +81,7 @@ const generateResetPasswordToken = async (email) => {
     .update(resetToken)
     .digest("hex");
 
-  const expires = Date.now() + 10 * 60 * 1000;
+  const expires : Date = Date.now() + 10 * 60 * 1000 as unknown as Date;
 
   user.passwordResetToken = hashedToken;
   user.passwordResetExpires = expires;
@@ -91,7 +95,7 @@ const generateResetPasswordToken = async (email) => {
  * @param {string} token - The raw token from the URL
  * @param {string} newPassword - The new password
  */
-const resetPassword = async (token, newPassword) => {
+const resetPassword = async (token : string, newPassword : string) => {
   if (!token) throw new ApiError(400, "Token is required");
 
   

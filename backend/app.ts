@@ -1,8 +1,9 @@
-import express from "express";
+import express, { type Application } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import { Strategy as PassportStrategy } from "passport"; 
 import compression from "compression";
 import morgan from "morgan";
 
@@ -16,7 +17,8 @@ import { errorConverter, errorHandler } from "./middlewares/errorhandler.js";
 
 import authRoutes from "./routes/auth.routes.js";
 
-const app = express();
+
+const app : Application = express();
 
 app.set("trust proxy", 1);
 
@@ -49,7 +51,7 @@ app.use(cookieParser());
 app.use(compression());
 
 
-passport.use(googleStrategy);
+passport.use("google",googleStrategy as unknown as PassportStrategy); ;
 app.use(passport.initialize());
 
 

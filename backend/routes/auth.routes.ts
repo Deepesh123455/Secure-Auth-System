@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import passport from "passport";
 
 
@@ -13,7 +13,7 @@ import auth from "../middlewares/auth.middleware.js";
 import * as authValidation from "../middlewares/validation.js";
 
 
-const router = express.Router();
+const router : Router = express.Router();
 
 
 router.post(

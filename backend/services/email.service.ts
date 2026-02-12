@@ -1,17 +1,17 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
+
 dotenv.config();
 
-
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: Number(process.env.SMTP_PORT) || 587,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  secure: false, // TLS ke liye false (Port 587)
 });
 
 
@@ -29,7 +29,7 @@ if (process.env.NODE_ENV !== "test") {
  * @param {string} text
  * @param {string} html (Optional)
  */
-const sendEmail = async (to, subject, text, html) => {
+const sendEmail = async (to : string, subject : string, text : string, html : string) => {
   const msg = {
     from: process.env.EMAIL_FROM,
     to,
@@ -46,7 +46,7 @@ const sendEmail = async (to, subject, text, html) => {
  * @param {string} to - User's email
  * @param {string} token - The verification token
  */
-const sendVerificationEmail = async (to, token) => {
+const sendVerificationEmail = async (to : string, token : string) => {
   const subject = "Email Verification";
 
  
@@ -73,7 +73,7 @@ If you did not request this, please ignore this email.`;
  * @param {string} to
  * @param {string} token
  */
-const sendResetPasswordEmail = async (to, token) => {
+const sendResetPasswordEmail = async (to : string, token : string) => {
   const subject = "Reset Password";
   const resetPasswordUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 

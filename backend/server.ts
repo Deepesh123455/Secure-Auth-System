@@ -3,20 +3,20 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 
 
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", (err : Error) => {
   console.log("UNCAUGHT EXCEPTION! Shutting down...");
   console.log(err.name, err.message);
   process.exit(1);
 });
 
-const startServer = async () => {
+const startServer = async () : Promise<void> => {
   try {
   
     await connectDB();
     console.log("MongoDB Connection Success!");
 
  
-    const PORT = process.env.PORT || 5000;
+    const PORT : string | number = process.env.PORT || 5000;
     const server = app.listen(PORT, () => {
       console.log(
         ` Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
@@ -24,7 +24,7 @@ const startServer = async () => {
     });
 
     
-    process.on("unhandledRejection", (err) => {
+    process.on("unhandledRejection", (err : Error ) => {
       console.log("UNHANDLED REJECTION! 💥 Shutting down...");
       console.log(err.name, err.message);
       server.close(() => {

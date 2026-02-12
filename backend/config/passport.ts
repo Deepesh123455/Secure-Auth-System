@@ -1,4 +1,4 @@
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as GoogleStrategy, type Profile, type VerifyCallback } from "passport-google-oauth20";
 import User from "../models/user.model.js";
 import dotenv from "dotenv";
 
@@ -6,11 +6,11 @@ dotenv.config();
 
 const googleStrategy = new GoogleStrategy(
   {
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    clientID: process.env.GOOGLE_CLIENT_ID as string,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     callbackURL: "http://localhost:5000/api/auth/google/callback",
   },
-  async (accessToken, refreshToken, profile, done) => {
+  async (accessToken : string, refreshToken : string, profile : Profile , done : VerifyCallback) => {
     try {
      
       let user = await User.findOne({ googleId: profile.id });
@@ -27,7 +27,7 @@ const googleStrategy = new GoogleStrategy(
       }
 
       
-      const email = profile.emails[0].value;
+      const email  = profile.emails?.[0]?.value;
       user = await User.findOne({ email });
 
       if (user) {
@@ -44,7 +44,7 @@ const googleStrategy = new GoogleStrategy(
       const newUser = await User.create({
         googleId: profile.id,
         email: email,
-        name: profile.displayName,
+        name: (profile as any).displayName,
         isEmailVerified: true,
         googleAccessToken: accessToken,
         googleRefreshToken: refreshToken,

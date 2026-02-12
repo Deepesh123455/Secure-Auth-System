@@ -1,8 +1,15 @@
 import mongoose from "mongoose";
 import ApiError from "../utils/ApiError.js";
+import type {Request, Response, NextFunction } from "express";
 
+interface Error {
+  statusCode: number;
+  message: string;
+  isOperational: boolean;
+  stack ? : string;
+}
 
-export const errorConverter = (err, req, res, next) => {
+export const errorConverter = (err : Error  , req : Request, res : Response, next : NextFunction) => {
   let error = err;
 
   
@@ -14,14 +21,14 @@ export const errorConverter = (err, req, res, next) => {
     const message = error.message || String(error); 
 
    
-    error = new ApiError(statusCode, message, false, err.stack);
+    error  = new ApiError(statusCode, message, false, err.stack);
   }
 
   next(error);
 };
 
 
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err : Error, req : Request, res : Response, next : NextFunction) => {
   let { statusCode, message } = err;
 
   
