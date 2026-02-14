@@ -1,0 +1,28 @@
+stages:
+  - deploy
+
+deploy-to-ec2:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    # SSH aur SCP tools install kar rahe hain
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+  script:
+    # 1. EC2 par project folder aur backend folder check karna
+    - ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p /home/ubuntu/project/backend"
+    
+    # 2. GitLab se saara naya code EC2 par copy karna
+    - scp -o StrictHostKeyChecking=no -r ./* $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
+    
+    # 3. EC2 par dummy .env file banana (taaki error na aaye)
+    - ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_IP_ADDRESS "touch /home/ubuntu/project/backend/.env"
+    
+    # 4. EC2 ke andar jaakar purane containers hata kar naye build karna
+    - ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_IP_ADDRESS "cd /home/ubuntu/project && docker compose down && docker compose up --build -d"
+  only:
+    - main
+    - ci/cd  # Agar aap ci/cd branch par kaam kar rahe ho toh ye zaroori hai
