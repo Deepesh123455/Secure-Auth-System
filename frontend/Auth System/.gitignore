@@ -36,3 +36,11 @@ dist-ssr
 
 # OS Generated
 Thumbs.db
+
+# Nginx related ignores
+*.log
+*.pid
+temp/
+# Agar aapne SSL certificates local rakhe hain toh unhe ignore karein
+/certs/*.crt
+/certs/*.key
