@@ -40,17 +40,21 @@ Follow these steps to run the project locally.
 git clone [https://github.com/Deepesh123455/Secure-Auth-System.git](https://github.com/Deepesh123455/Secure-Auth-System.git)
 cd Secure-Auth-System
 2. Install Dependencies
-   npm install
-3. Configure Environment VariablesCreate a .env file in the root directory and add the following configuration.(Note: You will need a local or Atlas MongoDB URI and a running Redis instance). Server Configuration
-PORT=5000
-NODE_ENV=development
+
+
+    npm install
+3. Configure Environment VariablesCreate a .env file in the root directory and add the following configuration.(Note: You will need a local or Atlas MongoDB URI and a running Redis instance).
+Server Configuration
+* PORT=5000
+* NODE_ENV=development
 
 # Database Connection
-MONGO_URI=mongodb://localhost:27017/secure_auth_db
+MONGO_URI=your mongodb uri
 
 # Redis Configuration (Caching)
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+REDIS_HOST=""
+REDIS_PORT=""
+>>>>>>> ci/cd
 # REDIS_PASSWORD=  <-- Uncomment if your Redis has a password
 
 # JWT Secrets (Generate random strong strings for these)
@@ -62,9 +66,22 @@ JWT_REFRESH_EXPIRY=7d
 # Google OAuth 2.0 Credentials
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+<<<<<<< HEAD
 GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 4. Run the ServerYou can run the server in development mode (with auto-restart) or production mode.Development Mode (uses nodemon)
 npm run dev
 
 # Production Mode
 npm start 
+=======
+GOOGLE_CALLBACK_URL=""
+4. Run the ServerYou can run the server in development mode (with auto-restart) or production mode.
+# Development Mode
+* (uses nodemon)
+# Productions mode
+* npm run dev
+
+# Production Mode
+npm start
+📡 API Endpoints OverviewMethodEndpointDescriptionPOST/api/auth/registerRegister a new userPOST/api/auth/loginLogin & receive HttpOnly CookieGET/api/auth/googleInitiate Google LoginPOST/api/auth/refreshGet new Access Token via Refresh TokenPOST/api/auth/logoutClear Session & Redis Cache
+>>>>>>> ci/cd

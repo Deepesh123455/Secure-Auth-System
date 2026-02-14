@@ -1,0 +1,97 @@
+networks:
+  # Containers ke beech internal communication ke liye private network
+  app-network:
+    driver: bridge
+
+services:
+  # ==========================================
+  # BACKEND SERVICE (Node.js + Hot Reload)
+  # ==========================================
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: app-backend
+    restart: unless-stopped
+    init: true 
+    ports:
+      - "5000:5000"
+    
+    # 🔄 HOT RELOAD MAGIC: Local code ko container se link kiya
+    volumes:
+      - ./backend:/app
+      - /app/node_modules # Local node_modules ko container mein overwrite hone se rokta hai
+    
+    networks:
+      - app-network
+    
+    env_file:
+      - ./backend/.env
+    
+    # Dev mode mein Nodemon chalane ke liye command overwrite
+    command: npm run dev
+      
+    environment:
+      - NODE_ENV=development # Dev mode for debugging and hot reload
+      - PORT=5000
+      - CLIENT_URL=http://localhost:5173 # Vite dev server ka default URL
+
+    # Healthcheck: Ensures backend is responding before frontend connects
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/"]
+      interval: 10s # Dev mein fast checks rakhte hain
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==========================================
+  # FRONTEND SERVICE (Vite Dev Server)
+  # ==========================================
+  frontend:
+    build: 
+      context: ./frontend/Auth System
+      dockerfile: Dockerfile
+      target: development
+    container_name: app-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173" # Vite ka default dev port
+    
+    # 🔄 HOT RELOAD MAGIC: Frontend files ko sync rakhega
+    volumes:
+      - ./frontend/Auth System:/app
+      - /app/node_modules
+    
+    networks:
+      - app-network
+    
+    # Vite ko host access dene ke liye command
+    command: npm run dev -- --host 0.0.0.0
+
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M # Vite build thodi RAM leta hai
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
