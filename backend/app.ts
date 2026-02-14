@@ -32,10 +32,10 @@ if (process.env.NODE_ENV === "development") {
 
 app.use(helmet());
 
-
+const origins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : "http://localhost:5173";
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: origins,
     credentials: true,
   })
 );
@@ -68,6 +68,11 @@ app.use("/api/auth", authRoutes);
 
 app.use((req, res, next) => {
   next(new ApiError(404, "Not found"));
+});
+
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("🚨 ASLI MUJRIM (ERROR):", err);
+  next(err); // Error ko aage bhej do taaki app normal chalti rahe
 });
 
 

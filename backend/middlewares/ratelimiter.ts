@@ -1,49 +1,74 @@
 import rateLimit from "express-rate-limit";
-import { RedisStore } from "rate-limit-redis";
 import { type NextFunction, type Request, type Response } from "express";
-import redisClient from "../config/redis.js"; // .js extension hatado agar TS config sahi hai
+import redisClient from "../config/redis.js"; 
+
+const WINDOW_MS = 15 * 60 * 1000; // 15 Minutes
+const MAX_REQUESTS = 100;
+
+// 💡 THE MASTERSTROKE: Apna Khud Ka Custom Store!
+// Bhaad mein gaya 'rate-limit-redis', hum direct ioredis use karenge.
+const customRedisStore = {
+  // express-rate-limit jab bhi limit badhana chahega, yeh function chalega
+  increment: async (key: string) => {
+    try {
+      const fullKey = `rl_custom:${key}`;
+      
+      // Redis mein value 1 se badhao (Agar nahi hai toh 1 set kar dega)
+      const hits = await redisClient.incr(fullKey);
+
+      // Agar yeh pehli request hai, toh Redis mein iska expiry timer (15 mins) laga do
+      if (hits === 1) {
+        await redisClient.expire(fullKey, WINDOW_MS / 1000);
+      }
+
+      return {
+        totalHits: hits,
+        resetTime: new Date(Date.now() + WINDOW_MS),
+      };
+    } catch (error) {
+      console.error("[Custom Redis Store Error] ❌:", error);
+      // Agar Redis down hai, toh server na phate (Fail Open)
+      return { totalHits: 1, resetTime: new Date(Date.now() + WINDOW_MS) };
+    }
+  },
+  
+  // Decrease hit count
+  decrement: async (key: string) => {
+    try {
+      await redisClient.decr(`rl_custom:${key}`);
+    } catch (e) {}
+  },
+  
+  // Reset completely
+  resetKey: async (key: string) => {
+    try {
+      await redisClient.del(`rl_custom:${key}`);
+    } catch (e) {}
+  }
+};
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 Minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  windowMs: WINDOW_MS, 
+  max: MAX_REQUESTS, 
+  standardHeaders: true, 
+  legacyHeaders: false, 
 
-  // Redis Store Configuration
-  store: new RedisStore({
-    sendCommand: (...args: string[]) =>
-      (redisClient.call as any)(...args) as Promise<any>,
-    prefix: "rl_common:", // ✅ IMP: Prefix add kiya taaki keys mix na ho
-  }),
+  // 👇 Yahan humne apna custom store laga diya
+  store: customRedisStore as any, 
 
-  // ✅ Fail Open Strategy: Agar Redis down hai, toh API mat roko, request jane do.
-  // Industry mein hum availability ko priority dete hain.
-  passOnStoreError: true,
-
-  // Custom Error Handler
   handler: (req: Request, res: Response, next: NextFunction, options) => {
     res.status(options.statusCode).json({
       status: "error",
       statusCode: options.statusCode,
-      message:
-        "Too many requests from this IP, please try again after 15 minutes",
+      message: "Too many requests from this IP, please try again after 15 minutes",
     });
   },
 
-  // Skip Logic (Whitelist)
   skip: (req: Request) => {
     const ip = req.ip || "127.0.0.1";
-    // IPv6 mapped IPv4 address bhi handle kiya
-    const whitelistedIps = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
-
-    if (whitelistedIps.includes(ip)) {
-      return true;
-    }
-    return false;
+    const whitelistedIps = ["127.0.0.1", "::1", "::ffff:127.0.0.1", "unknown_ip"];
+    return whitelistedIps.includes(ip);
   },
-
-  // 💡 Bonus Mastery Tip: Key Generator
-  // Default IP se limit karta hai. Agar user logged in hai, toh UserID se limit karo.
 });
 
 export default limiter;

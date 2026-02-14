@@ -17,6 +17,7 @@ export default defineConfig({
       "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
   },
+  
   server: {
     proxy: {
       // ⚡ This forwards requests to your backend
@@ -26,5 +27,10 @@ export default defineConfig({
         secure: false,
       },
     },
+    watch:{
+      usePolling: true
+    },
+    host: true,
+    port: 5173
   },
 });

@@ -1,51 +1,82 @@
-import slowDown, {type Options } from "express-slow-down";
-import { RedisStore } from "rate-limit-redis";
-import {type Request,type Response } from "express";
+import slowDown from "express-slow-down";
+import { type Request, type Response } from "express";
 import redisClient from "../config/redis.js";
 
-
-// Constants define karna maintainability ke liye better hai
-const WINDOW_MS = 15 * 60 * 1000; // 15 Minutes
-const DELAY_AFTER = 5; // 1 request ke baad slow karna harsh hai, 5 is standard
-const BASE_DELAY_MS = 100;
-const WHITELISTED_IPS = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
+// 🕒 Configuration Constants
+const WINDOW_MS = 15 * 60 * 1000; // 15 Minutes window
+const DELAY_AFTER = 5; // 5 requests ke baad slow karna
+const BASE_DELAY_MS = 100; // Har extra request par 100ms delay
+const WHITELISTED_IPS = ["127.0.0.1", "::1", "::ffff:127.0.0.1", "unknown_ip"];
 
 /**
- * Redis Store Setup for Rate Limiting
- * Note: 'rate-limit-redis' needs the 'sendCommand' method from ioredis
+ * 💡 THE MASTERSTROKE: Apna Khud Ka Custom Speed Store!
+ * Bina kisi 3rd party package ke jhamale ke, direct aur fast Redis commands.
  */
-const redisSpeedStore = new RedisStore({
-  
-  sendCommand: (...args: string[]) => (redisClient.call as any)(...args) as Promise<any>, 
-  prefix: "speed_limit:",
-});
+const customSpeedRedisStore = {
+  // Hit count badhane ka function
+  increment: async (key: string) => {
+    try {
+      const fullKey = `speed_limit:${key}`;
 
-export const speedLimiter  = slowDown({
+      // Redis mein seedha hit count 1 se badhao
+      const hits = await redisClient.incr(fullKey);
+
+      // Agar yeh is IP ki pehli request hai, toh 15 mins ka timer laga do
+      if (hits === 1) {
+        await redisClient.expire(fullKey, WINDOW_MS / 1000);
+      }
+
+      return {
+        totalHits: hits,
+        resetTime: new Date(Date.now() + WINDOW_MS),
+      };
+    } catch (error) {
+      console.error("[Custom Speed Store Error] ❌:", error);
+      // Agar Redis fail ho jaye, toh request pass hone do (Crash mat karo)
+      return { totalHits: 1, resetTime: new Date(Date.now() + WINDOW_MS) };
+    }
+  },
+
+  // Hit count kam karne ka function (kabhi kabhi package ko chahiye hota hai)
+  decrement: async (key: string) => {
+    try {
+      await redisClient.decr(`speed_limit:${key}`);
+    } catch (e) {}
+  },
+
+  // IP ka record delete karne ka function
+  resetKey: async (key: string) => {
+    try {
+      await redisClient.del(`speed_limit:${key}`);
+    } catch (e) {}
+  },
+};
+
+export const speedLimiter = slowDown({
   windowMs: WINDOW_MS,
   delayAfter: DELAY_AFTER,
   delayMs: BASE_DELAY_MS,
-  store: redisSpeedStore as any,
+
+  // 👇 Apna bulletproof desi store lagao
+  store: customSpeedRedisStore as any,
 
   /**
-   * Skip Function:
-   * Agar IP whitelist mein hai, toh true return karo (skip karo).
+   * 🟢 Skip Function (VIP List):
    */
   skip: (req: Request): boolean => {
-    const ip = req.ip || "127.0.0.1"; // Fallback for safety
-
+    const ip = req.ip || "127.0.0.1";
     if (WHITELISTED_IPS.includes(ip)) {
-      console.log(`[SpeedLimit] 🟢 Skipped (Whitelisted): ${ip}`);
-      return true; // ✅ CHANGE: Pehle tum false return kar rahe the (bug)
+      return true; // Healthchecks / Localhost bypass
     }
-
-    return false; // Do not skip
+    return false;
   },
 
   /**
-   * On Limit Reached:
-   * Sirf tab log karega jab user actual mein slow hona shuru hoga
+   * ⚠️ On Limit Reached:
    */
   onLimitReached: (req: Request, res: Response, options: any) => {
-    console.warn(`[SpeedLimit] ⚠️ Throttling Request for IP: ${req.ip}`);
-  } ,
+    console.warn(
+      `[SpeedLimit] 🐌 Throttling Request for IP: ${req.ip || "Unknown"}`,
+    );
+  },
 } as any);
