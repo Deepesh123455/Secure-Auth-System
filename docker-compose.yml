@@ -9,7 +9,7 @@ services:
       dockerfile: Dockerfile
       # IMPORTANT: Hum 'builder' stage use kar rahe hain kyunki 'runner' stage 
       # se humne dev dependencies (nodemon etc.) hata di thi optimization ke liye.
-      target: builder 
+      target: runner 
     
     # 🔄 HOT RELOAD MAGIC
     volumes:
@@ -51,7 +51,7 @@ services:
       context: ./frontend/Auth System
       dockerfile: Dockerfile
       # Matches Stage 1 of Frontend Dockerfile
-      target: development
+      target: runner
     
     # 🔄 HOT RELOAD MAGIC
     volumes:
