@@ -1,36 +1,39 @@
-# -------------------------------------------------------------------
-# STAGE 1: BUILDER
-# -------------------------------------------------------------------
+# LOCATION: ./backend/Dockerfile
+
+# ----------------------------
+# Stage 1: Builder
+# ----------------------------
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Cache optimization keys
 COPY package*.json ./
-RUN npm install
+
+# 'npm ci' ensures exact versions from lockfile (Critical for CI pipelines)
+RUN npm ci
+
 COPY . .
 RUN npm run build
 
-# -------------------------------------------------------------------
-# STAGE 2: RUNNER
-# -------------------------------------------------------------------
+# ----------------------------
+# Stage 2: Runner (AWS Ready)
+# ----------------------------
 FROM node:20-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Global tools install karo (Ye development mein kaam aayenge)
-RUN npm install -g nodemon tsx
+# Sirf production dependencies (AWS cost & security saving)
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Files copy karo
-COPY --from=builder /app/package*.json ./
+# Copy built artifacts
 COPY --from=builder /app/dist ./dist
-# Development ke liye source code bhi chahiye (Hot reload ke liye)
-COPY . .
 
-# Permissions set karo (root user hi install karega taaki permission error na aaye)
-RUN npm install
-
-# Ab user switch karo security ke liye
+# Non-root user for security (AWS GuardDuty likes this)
 RUN chown -R node:node /app
 USER node
 
+# Port expose (AWS Load Balancer will map to this)
 EXPOSE 5000
 
-# Default command (Docker-compose isse dev mein overwrite kar dega)
 CMD ["node", "dist/server.js"]

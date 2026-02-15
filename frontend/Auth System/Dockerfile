@@ -1,38 +1,32 @@
-# -------------------------------------------------------------------
-# STAGE 1: DEVELOPMENT (Hot Reload ke liye)
-# -------------------------------------------------------------------
-FROM node:20-alpine AS development
-# Alpine mein extra tools install karna zaroori hota hai kabhi kabhi
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
+# LOCATION: ./frontend/Auth System/Dockerfile
 
-COPY package*.json ./
-# Sabhi dependencies install karo
-RUN npm install
-
-COPY . .
-
-EXPOSE 5173
-
-# Vite ko 0.0.0.0 par chalana zaroori hai Docker ke liye
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
-
-# -------------------------------------------------------------------
-# STAGE 2: BUILDER (For Production Build)
-# -------------------------------------------------------------------
+# ----------------------------
+# Stage 1: Builder
+# ----------------------------
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Pipeline speed boost
 COPY package*.json ./
-RUN npm install
+RUN npm ci
+
 COPY . .
 RUN npm run build
 
-# -------------------------------------------------------------------
-# STAGE 3: RUNNER (Nginx for Production)
-# -------------------------------------------------------------------
-FROM nginx:stable-alpine AS runner
+# ----------------------------
+# Stage 2: Nginx Runner
+# ----------------------------
+FROM nginx:alpine AS runner
+
+# Remove default nginx html
 RUN rm -rf /usr/share/nginx/html/*
+
+# Copy React Build output
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Custom Nginx Config (Niche dekho)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]

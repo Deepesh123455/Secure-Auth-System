@@ -1,26 +1,23 @@
-networks:
-  # Containers ke beech internal communication ke liye private network
-  app-network:
-    driver: bridge
-
 services:
   # ==========================================
-  # BACKEND SERVICE (Node.js + Hot Reload)
+  # BACKEND SERVICE (Target: Builder Stage)
   # ==========================================
   backend:
-    build: 
+    container_name: app-backend
+    build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: app-backend
-    restart: unless-stopped
-    init: true 
-    ports:
-      - "5000:5000"
+      # IMPORTANT: Hum 'builder' stage use kar rahe hain kyunki 'runner' stage 
+      # se humne dev dependencies (nodemon etc.) hata di thi optimization ke liye.
+      target: builder 
     
-    # 🔄 HOT RELOAD MAGIC: Local code ko container se link kiya
+    # 🔄 HOT RELOAD MAGIC
     volumes:
       - ./backend:/app
-      - /app/node_modules # Local node_modules ko container mein overwrite hone se rokta hai
+      - /app/node_modules # Container ke modules ko protect karta hai
+    
+    ports:
+      - "5000:5000"
     
     networks:
       - app-network
@@ -28,70 +25,59 @@ services:
     env_file:
       - ./backend/.env
     
-    # Dev mode mein Nodemon chalane ke liye command overwrite
+    # Dev command (Ensure package.json has "dev": "nodemon ...")
     command: npm run dev
       
     environment:
-      - NODE_ENV=development # Dev mode for debugging and hot reload
+      - NODE_ENV=development
       - PORT=5000
-      
-
-    # Healthcheck: Ensures backend is responding before frontend connects
+    
+    # Dev mein agar crash ho to restart mat karo, error log padhne do
+    restart: "no"
+    
+    # Healthcheck (Optimized for silence & speed)
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/"]
-      interval: 10s # Dev mein fast checks rakhte hain
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5000"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
-
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
-
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      retries: 3
 
   # ==========================================
-  # FRONTEND SERVICE (Vite Dev Server)
+  # FRONTEND SERVICE (Target: Development Stage)
   # ==========================================
   frontend:
-    build: 
+    container_name: app-frontend
+    build:
       context: ./frontend/Auth System
       dockerfile: Dockerfile
+      # Matches Stage 1 of Frontend Dockerfile
       target: development
-    container_name: app-frontend
-    restart: unless-stopped
-    ports:
-      - "5173:5173" # Vite ka default dev port
     
-    # 🔄 HOT RELOAD MAGIC: Frontend files ko sync rakhega
+    # 🔄 HOT RELOAD MAGIC
     volumes:
       - ./frontend/Auth System:/app
       - /app/node_modules
     
+    ports:
+      - "5173:5173"
+    
     networks:
       - app-network
     
-    # Vite ko host access dene ke liye command
-    command: npm run dev -- --host 0.0.0.0
-
+    # Backend ready hone ka wait karega
     depends_on:
       backend:
         condition: service_healthy
+
+    environment:
+      # WINDOWS/WSL FIX: Iske bina kabhi-kabhi hot reload detect nahi hota
+      - CHOKIDAR_USEPOLLING=true 
     
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M # Vite build thodi RAM leta hai
-    
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    command: npm run dev -- --host 0.0.0.0
+
+# ==========================================
+# NETWORKS
+# ==========================================
+networks:
+  app-network:
+    driver: bridge

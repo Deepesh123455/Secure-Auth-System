@@ -4,25 +4,64 @@ stages:
 deploy-to-ec2:
   stage: deploy
   image: alpine:latest
+  
+  # Variables section (Optional: Agar timeout badhana ho)
+  variables:
+    GIT_STRATEGY: clone
+
   before_script:
-    # SSH aur SCP tools install kar rahe hain
-    - apk add --no-cache openssh-client
+    # 1. Install SSH & Rsync (Rsync is 10x faster than SCP for code sync)
+    - apk add --no-cache openssh-client rsync
+    
+    # 2. SSH Key Setup (Secure method)
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
+    
+    # 3. Server Verification (Security Best Practice: Man-in-the-middle attack prevention)
+    # StrictHostKeyChecking=no ki jagah hum server key ko scan karke trust karenge
+    - ssh-keyscan -H $EC2_IP_ADDRESS >> ~/.ssh/known_hosts
+
   script:
-    # 1. EC2 par project folder aur backend folder check karna
-    - ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p /home/ubuntu/project/backend"
-    
-    # 2. GitLab se saara naya code EC2 par copy karna
-    - scp -o StrictHostKeyChecking=no -r ./* $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
-    
-    # 3. EC2 par dummy .env file banana (taaki error na aaye)
-    - ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_IP_ADDRESS "touch /home/ubuntu/project/backend/.env"
-    
-    # 4. EC2 ke andar jaakar purane containers hata kar naye build karna
-    - ssh -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_IP_ADDRESS "cd /home/ubuntu/project && docker compose down && docker compose up --build -d"
+    # ---------------------------------------------------------
+    # STEP 1: PREPARE SERVER DIRECTORIES
+    # ---------------------------------------------------------
+    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p /home/ubuntu/project/backend /home/ubuntu/project/frontend"
+
+    # ---------------------------------------------------------
+    # STEP 2: GENERATE ENV FILE ON SERVER (CRITICAL FIX)
+    # ---------------------------------------------------------
+    # GitLab Variable 'BACKEND_ENV' ka content server par .env file mein write karega.
+    # Empty file banane se app crash hota hai.
+    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "echo '$BACKEND_ENV' > /home/ubuntu/project/backend/.env"
+
+    # ---------------------------------------------------------
+    # STEP 3: FAST CODE SYNC (RSYNC MAGIC)
+    # ---------------------------------------------------------
+    # -a: Archive mode (preserve permissions)
+    # -v: Verbose
+    # -z: Compress data (saves bandwidth)
+    # --delete: Jo file gitlab se delete ho gayi, wo server se bhi uda do
+    # --exclude: 'node_modules' aur '.git' ko copy mat karo (HUGE SPEED BOOST)
+    - rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude 'dist' ./ $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
+
+    # ---------------------------------------------------------
+    # STEP 4: DOCKER DEPLOYMENT
+    # ---------------------------------------------------------
+    - |
+      ssh $EC2_USERNAME@$EC2_IP_ADDRESS "
+        cd /home/ubuntu/project && \
+        
+        # 1. Stop containers & remove orphans (Clean slate)
+        docker compose down --remove-orphans && \
+        
+        # 2. Cleanup Space (Sirf unused images hatayega, aggressive prune hataya safety ke liye)
+        docker system prune -f && \
+        
+        # 3. Rebuild & Start (Pull latest base images)
+        docker compose up --build --pull always -d
+      "
+
   only:
     - main
-    - ci/cd  # Agar aap ci/cd branch par kaam kar rahe ho toh ye zaroori hai
