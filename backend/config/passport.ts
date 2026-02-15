@@ -8,7 +8,8 @@ const googleStrategy = new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID as string,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    callbackURL: "http://localhost:5000/api/auth/google/callback",
+    callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
+    scope : ["profile", "email"],
   },
   async (accessToken : string, refreshToken : string, profile : Profile , done : VerifyCallback) => {
     try {
