@@ -5,61 +5,57 @@ deploy-to-ec2:
   stage: deploy
   image: alpine:latest
   
-  # Variables section (Optional: Agar timeout badhana ho)
   variables:
     GIT_STRATEGY: clone
 
   before_script:
-    # 1. Install SSH & Rsync (Rsync is 10x faster than SCP for code sync)
+    # 1. Install SSH & Rsync (Fastest sync tool)
     - apk add --no-cache openssh-client rsync
     
-    # 2. SSH Key Setup (Secure method)
+    # 2. SSH Key Setup
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     
-    # 3. Server Verification (Security Best Practice: Man-in-the-middle attack prevention)
-    # StrictHostKeyChecking=no ki jagah hum server key ko scan karke trust karenge
+    # 3. Server Verification
     - ssh-keyscan -H $EC2_IP_ADDRESS >> ~/.ssh/known_hosts
 
   script:
     # ---------------------------------------------------------
-    # STEP 1: PREPARE SERVER DIRECTORIES
+    # STEP 1: PREPARE FOLDERS
     # ---------------------------------------------------------
     - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p /home/ubuntu/project/backend /home/ubuntu/project/frontend"
 
     # ---------------------------------------------------------
-    # STEP 2: GENERATE ENV FILE ON SERVER (CRITICAL FIX)
+    # STEP 2: CODE SYNC (RSYNC SAFE MODE)
     # ---------------------------------------------------------
-    # GitLab Variable 'BACKEND_ENV' ka content server par .env file mein write karega.
-    # Empty file banane se app crash hota hai.
+    # --delete: Jo files GitLab me nahi hain unhe server se udayega (Cleaning)
+    # --exclude '.env': ISKA MATLAB HAI .ENV KO MATCH MAT KARO (Safety lock 🔒)
+    # Isse rsync tumhari .env file ko touch bhi nahi karega (na delete, na overwrite)
+    - rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude 'dist' --exclude '.env' ./ $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
+
+    # ---------------------------------------------------------
+    # STEP 3: UPDATE SECRETS (ENV FILE)
+    # ---------------------------------------------------------
+    # Hum jaan boojh kar har baar overwrite kar rahe hain taaki 
+    # agar tumne GitLab me password change kiya ho, to wo server par update ho jaye.
     - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "echo '$BACKEND_ENV' > /home/ubuntu/project/backend/.env"
 
     # ---------------------------------------------------------
-    # STEP 3: FAST CODE SYNC (RSYNC MAGIC)
-    # ---------------------------------------------------------
-    # -a: Archive mode (preserve permissions)
-    # -v: Verbose
-    # -z: Compress data (saves bandwidth)
-    # --delete: Jo file gitlab se delete ho gayi, wo server se bhi uda do
-    # --exclude: 'node_modules' aur '.git' ko copy mat karo (HUGE SPEED BOOST)
-    - rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude 'dist' ./ $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
-
-    # ---------------------------------------------------------
-    # STEP 4: DOCKER DEPLOYMENT
+    # STEP 4: DOCKER DEPLOY & CLEANUP
     # ---------------------------------------------------------
     - |
       ssh $EC2_USERNAME@$EC2_IP_ADDRESS "
         cd /home/ubuntu/project && \
         
-        # 1. Stop containers & remove orphans (Clean slate)
+        # 1. Stop Containers & Clean Orphans
         docker compose down --remove-orphans && \
         
-        # 2. Cleanup Space (Sirf unused images hatayega, aggressive prune hataya safety ke liye)
+        # 2. Cleanup Space (Sirf dangling images hatayega, file system safe rahega)
         docker system prune -f && \
         
-        # 3. Rebuild & Start (Pull latest base images)
+        # 3. Start Fresh
         docker compose up --build --pull always -d
       "
 
