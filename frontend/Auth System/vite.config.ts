@@ -8,6 +8,7 @@ import tailwindcss from '@tailwindcss/vite';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -22,7 +23,7 @@ export default defineConfig({
     proxy: {
       // ⚡ This forwards requests to your backend
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://56.228.32.157:5000',
         changeOrigin: true,
         secure: false,
       },
