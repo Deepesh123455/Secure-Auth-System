@@ -231,7 +231,7 @@ const LoginPage = () => {
             </div>
 
             <a
-              href="http://localhost:5000/api/auth/google"
+              href="http://56.228.32.157.nip.io:5000/api/auth/google/callback"
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">

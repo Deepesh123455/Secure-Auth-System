@@ -34,7 +34,7 @@ services:
     environment:
       - NODE_ENV=development # Dev mode for debugging and hot reload
       - PORT=5000
-      - CLIENT_URL=http://localhost:5173 # Vite dev server ka default URL
+      
 
     # Healthcheck: Ensures backend is responding before frontend connects
     healthcheck:
