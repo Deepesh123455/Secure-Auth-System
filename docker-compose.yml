@@ -87,8 +87,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: 256M # Vite build thodi RAM leta hai
+          cpus: '0.50'
+          memory: 512M # Vite build thodi RAM leta hai
     
     logging:
       driver: "json-file"
