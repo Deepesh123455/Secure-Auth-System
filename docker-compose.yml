@@ -11,11 +11,7 @@ services:
       # se humne dev dependencies (nodemon etc.) hata di thi optimization ke liye.
       target: runner 
     
-    # 🔄 HOT RELOAD MAGIC
-    volumes:
-      - ./backend:/app
-      - /app/node_modules # Container ke modules ko protect karta hai
-    
+   
     ports:
       - "5000:5000"
     
@@ -54,9 +50,7 @@ services:
       target: runner
     
     # 🔄 HOT RELOAD MAGIC
-    volumes:
-      - ./frontend/Auth System:/app
-      - /app/node_modules
+    
     
     ports:
       - "5173:5173"
