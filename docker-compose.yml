@@ -54,7 +54,7 @@ services:
     
     
     ports:
-      - "5173:5173"
+      - "80:80"
     
     networks:
       - app-network
@@ -64,11 +64,7 @@ services:
       backend:
         condition: service_healthy
 
-    environment:
-      # WINDOWS/WSL FIX: Iske bina kabhi-kabhi hot reload detect nahi hota
-      - CHOKIDAR_USEPOLLING=true 
     
-    command: npm run dev -- --host 0.0.0.0
 
 # ==========================================
 # NETWORKS
