@@ -9,54 +9,39 @@ deploy-to-ec2:
     GIT_STRATEGY: clone
 
   before_script:
-    # 1. Install SSH & Rsync (Fastest sync tool)
     - apk add --no-cache openssh-client rsync
-    
-    # 2. SSH Key Setup
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    
-    # 3. Server Verification
     - ssh-keyscan -H $EC2_IP_ADDRESS >> ~/.ssh/known_hosts
 
   script:
     # ---------------------------------------------------------
-    # STEP 1: PREPARE FOLDERS
+    # STEP 1: PREPARE FOLDERS (FIXED PATHS)
     # ---------------------------------------------------------
-    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p /home/ubuntu/project/backend /home/ubuntu/project/frontend"
+    # "Auth System" ko quotes mein likha hai taaki space ki wajah se error na aaye.
+    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p '/home/ubuntu/project/backend' '/home/ubuntu/project/frontend/Auth System'"
 
     # ---------------------------------------------------------
-    # STEP 2: CODE SYNC (RSYNC SAFE MODE)
+    # STEP 2: SUPER CLEANUP (CRITICAL)
     # ---------------------------------------------------------
-    # --delete: Jo files GitLab me nahi hain unhe server se udayega (Cleaning)
-    # --exclude '.env': ISKA MATLAB HAI .ENV KO MATCH MAT KARO (Safety lock 🔒)
-    # Isse rsync tumhari .env file ko touch bhi nahi karega (na delete, na overwrite)
+    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "docker system prune -a --volumes -f"
+
+    # ---------------------------------------------------------
+    # STEP 3: CODE SYNC (SAFE MODE)
+    # ---------------------------------------------------------
+    # Yeh tumhare poore structure ko waise ka waisa server par copy karega.
+    # Agar tumhare git repo mein 'frontend/Auth System' hai, to server par bhi wahi aayega.
     - rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude 'dist' --exclude '.env' ./ $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
 
     # ---------------------------------------------------------
-    # STEP 3: UPDATE SECRETS (ENV FILE)
-    # ---------------------------------------------------------
-    # Hum jaan boojh kar har baar overwrite kar rahe hain taaki 
-    # agar tumne GitLab me password change kiya ho, to wo server par update ho jaye.
-    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "echo '$BACKEND_ENV' > /home/ubuntu/project/backend/.env"
-
-    # ---------------------------------------------------------
-    # STEP 4: DOCKER DEPLOY & CLEANUP
+    # STEP 4: DOCKER DEPLOY
     # ---------------------------------------------------------
     - |
       ssh $EC2_USERNAME@$EC2_IP_ADDRESS "
         cd /home/ubuntu/project && \
-        
-        # 1. Stop Containers & Clean Orphans
-        docker compose down --remove-orphans && \
-        
-        # 2. Cleanup Space (Sirf dangling images hatayega, file system safe rahega)
-        docker system prune -f && \
-        
-        # 3. Start Fresh
-        docker compose up --build --pull always -d
+        docker compose up --build -d
       "
 
   only:
