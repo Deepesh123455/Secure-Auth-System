@@ -10,6 +10,8 @@ services:
       # IMPORTANT: Hum 'builder' stage use kar rahe hain kyunki 'runner' stage 
       # se humne dev dependencies (nodemon etc.) hata di thi optimization ke liye.
       target: runner 
+      
+   
     
    
     ports:
@@ -21,15 +23,14 @@ services:
     env_file:
       - ./backend/.env
     
-    # Dev command (Ensure package.json has "dev": "nodemon ...")
-    command: npm run dev
+    
       
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=5000
     
     # Dev mein agar crash ho to restart mat karo, error log padhne do
-    restart: "no"
+    restart: always
     
     # Healthcheck (Optimized for silence & speed)
     healthcheck:
