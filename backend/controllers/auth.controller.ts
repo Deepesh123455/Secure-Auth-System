@@ -10,8 +10,10 @@ import ApiError from "../utils/ApiError.js";
 // ✅ Mastery Tip: Production mein 'secure: true' hona chahiye
 const cookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production", // Auto-toggle based on environment
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  // ⚠️ CRITICAL CHANGE: Force false until you have https://
+  secure: false, 
+  // ⚠️ CRITICAL CHANGE: 'none' requires Secure=true, so use 'lax'
+  sameSite: "lax", 
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
 };
