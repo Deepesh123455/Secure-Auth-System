@@ -22,7 +22,7 @@ interface formErros {
 const LoginPage = () => {
   const navigate = useNavigate();
 
-  const { login, isLoading } = useAuthStore();
+  const { login, isLoading,googleOauthLogin } = useAuthStore();
 
   const [formData, setFormData] = useState<{ email: string; password: string }>(
     {
@@ -231,7 +231,7 @@ const LoginPage = () => {
             </div>
 
             <a
-              href="http://56.228.32.157.nip.io:5000/api/auth/google/callback"
+              href="http://56.228.32.157.nip.io:5000/api/auth/google"
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">

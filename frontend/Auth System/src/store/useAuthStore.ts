@@ -30,6 +30,7 @@ interface AuthActions {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<any>;
+  googleOauthLogin: (token : string) => void;
 }
 
 // Combine them
@@ -59,6 +60,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isLoading: false,
   isCheckingAuth: true,
   message: null,
+  googleOauthLogin: (token : string) => {
+    localStorage.setItem("accessToken", token);
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    set({isAuthenticated: true,error:null});
+  },
 
   // Actions
   checkAuth: async () => {
