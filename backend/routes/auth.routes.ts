@@ -1,76 +1,63 @@
 import express, { Router } from "express";
 import passport from "passport";
 
-
 import authController from "../controllers/auth.controller.js";
-
 
 import validate from "../middlewares/validate.js";
 
 import auth from "../middlewares/auth.middleware.js";
 
-
 import * as authValidation from "../middlewares/validation.js";
 
-
-const router : Router = express.Router();
-
+const router: Router = express.Router();
 
 router.post(
   "/register",
   validate(authValidation.register),
-  authController.register
+  authController.register,
 );
-
 
 router.post(
   "/login",
 
   validate(authValidation.login),
-  authController.login
+  authController.login,
 );
 
-
 router.post("/refresh-tokens", authController.refreshTokens);
-
 
 router.post(
   "/forgot-password",
 
   validate(authValidation.forgotPassword),
-  authController.forgotPassword
+  authController.forgotPassword,
 );
-
 
 router.post(
   "/reset-password",
 
   validate(authValidation.resetPassword),
-  authController.resetPassword
+  authController.resetPassword,
 );
-
-
 
 router.post("/logout", auth, authController.logout);
 
-
 router.get("/profile", auth, authController.getProfile);
-
 
 router.patch(
   "/profile",
 
   auth,
   validate(authValidation.updateProfile),
-  authController.updateProfile
+  authController.updateProfile,
 );
-
-
 
 router.get(
   "/google",
-
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account", // <-- YEH JADUI LINE ADD KARNI HAI
+  }),
 );
 
 router.get(
@@ -80,7 +67,7 @@ router.get(
     session: false,
     failureRedirect: "/login",
   }),
-  authController.googleCallback
+  authController.googleCallback,
 );
 
 export default router;
