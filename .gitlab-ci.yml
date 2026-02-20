@@ -1,9 +1,56 @@
 stages:
+  - build
+  - test
   - deploy
 
-deploy-to-ec2:
+# Global Cache: Saves node_modules so we don't re-download them every time
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - "frontend/Auth System/node_modules/"
+    - "backend/node_modules/"
+
+# ---------------------------------------------------------
+# STAGE 1: BUILD (Verification)
+# ---------------------------------------------------------
+build_job:
+  stage: build
+  image: node:lts  # Using Node image to compile/build
+  script:
+    - echo "Building the application..."
+    # Handle Frontend Build
+    - cd "frontend/Auth System"
+    - npm install
+    - npm run build
+    # Handle Backend Build (if applicable)
+    - cd ../../backend
+    - npm install
+    # - npm run build (Uncomment if backend needs building)
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - "frontend/Auth System/dist" # Save the build output
+      - "frontend/Auth System/node_modules"
+
+# ---------------------------------------------------------
+# STAGE 2: TEST
+# ---------------------------------------------------------
+test_job:
+  stage: test
+  image: node:lts
+  needs: ["build_job"] # Waits for build to finish
+  script:
+    - echo "Running Tests..."
+    - cd "frontend/Auth System"
+    - npm test -- --passWithNoTests # Logic ensures pipeline passes even if no tests exist yet
+
+# ---------------------------------------------------------
+# STAGE 3: DEPLOY
+# ---------------------------------------------------------
+deploy_to_ec2:
   stage: deploy
   image: alpine:latest
+  needs: ["test_job"] # Only runs if tests pass
   
   variables:
     GIT_STRATEGY: clone
@@ -17,27 +64,18 @@ deploy-to-ec2:
     - ssh-keyscan -H $EC2_IP_ADDRESS >> ~/.ssh/known_hosts
 
   script:
-    # ---------------------------------------------------------
-    # STEP 1: PREPARE FOLDERS (FIXED PATHS)
-    # ---------------------------------------------------------
-    # "Auth System" ko quotes mein likha hai taaki space ki wajah se error na aaye.
+    # 1. PREPARE FOLDERS
     - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "mkdir -p '/home/ubuntu/project/backend' '/home/ubuntu/project/frontend/Auth System'"
 
-    # ---------------------------------------------------------
-    # STEP 2: SUPER CLEANUP (CRITICAL)
-    # ---------------------------------------------------------
-    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "docker system prune -a --volumes -f"
+    # 2. CLEANUP (CAUTION: 'prune -a' deletes all images, forcing a full redownload every time)
+    # Removing '-a' keeps base images like Node/Python, speeding up deployment.
+    - ssh $EC2_USERNAME@$EC2_IP_ADDRESS "docker system prune -f --volumes"
 
-    # ---------------------------------------------------------
-    # STEP 3: CODE SYNC (SAFE MODE)
-    # ---------------------------------------------------------
-    # Yeh tumhare poore structure ko waise ka waisa server par copy karega.
-    # Agar tumhare git repo mein 'frontend/Auth System' hai, to server par bhi wahi aayega.
-    - rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude 'dist' --exclude '.env' ./ $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
+    # 3. CODE SYNC
+    # We sync the source code. Note: We exclude node_modules to let Docker handle dependencies cleanly on the server
+    - rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude '.env' ./ $EC2_USERNAME@$EC2_IP_ADDRESS:/home/ubuntu/project/
 
-    # ---------------------------------------------------------
-    # STEP 4: DOCKER DEPLOY
-    # ---------------------------------------------------------
+    # 4. DOCKER DEPLOY
     - |
       ssh $EC2_USERNAME@$EC2_IP_ADDRESS "
         cd /home/ubuntu/project && \
