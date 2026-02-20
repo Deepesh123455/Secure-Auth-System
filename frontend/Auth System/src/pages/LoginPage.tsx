@@ -22,7 +22,7 @@ interface formErros {
 const LoginPage = () => {
   const navigate = useNavigate();
 
-  const { login, isLoading,googleOauthLogin } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
 
   const [formData, setFormData] = useState<{ email: string; password: string }>(
     {
